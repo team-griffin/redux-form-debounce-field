@@ -65,6 +65,7 @@ const enhance = compose<InnerProps, OuterProps>(
       debouncing: false,
     },
     {
+      // eslint-disable-next-line max-len
       setDebounceFieldValue: () => (debounceFieldValue) => ({ debounceFieldValue }),
       setDebouncing: () => (debouncing) => ({ debouncing }),
     },
