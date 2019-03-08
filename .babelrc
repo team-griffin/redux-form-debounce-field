@@ -1,0 +1,65 @@
+{
+  "presets": [
+    "@babel/preset-react",
+  ],
+
+  "plugins": [
+    ["@babel/plugin-proposal-object-rest-spread", { "useBuiltIns": true }],
+  ],
+
+  "env": {
+    "development": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "browsers": [
+                "last 2 versions",
+                "safari >= 7"
+              ],
+            },
+            "modules": false,
+            "useBuiltIns": false,
+          }
+        ]
+      ]
+    },
+
+    "production": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "browsers": [
+                "last 2 versions",
+                "safari >= 7"
+              ],
+            },
+            "modules": false,
+            "useBuiltIns": false,
+          }
+        ]
+      ],
+      "plugins": [
+        "module:babel-plugin-jsx-remove-data-test-id",
+        "module:babel-strip-test-code",
+      ],
+    },
+
+    "test": {
+      "presets": [
+        [
+          "@babel/preset-env",{
+            "targets": {
+              "node": "current",
+            },
+            "modules": "commonjs",
+            "useBuiltIns": false,
+          },
+        ],
+      ],
+    }
+  }
+}
