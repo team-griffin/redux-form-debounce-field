@@ -259,6 +259,42 @@ describe('<ReduxDebounceInput />', function() {
           expect(value).to.equal('overridden2');
         });
       });
+
+      context('when user leaves the field', function() {
+        it('updates the redux form value immediately', function() {
+          let value;
+          const Sink = createSink((props: InnerProps) => {
+            value = props.input.value;
+          });
+          const props = {
+            ownerComponent: (): any => null,
+            meta: fakeMeta,
+          };
+          const Stub = compose<any, any>(
+            withState('input', 'setInput', {
+              ...fakeInput,
+              onChange: () => {},
+              value: 'original',
+            }),
+            enhance,
+          )(Sink);
+          const evt = {
+            persist: () => {},
+            target: {
+              value: 'changed',
+            },
+          };
+    
+          const wrapper = mount(<Stub wait={5000} {...props}/>);
+  
+          expect(value).to.equal('original');
+  
+          wrapper.find(Sink).prop('input').onChange(evt);
+          wrapper.find(Sink).prop('input').onBlur(evt);
+  
+          expect(value).to.equal('changed');
+        });
+      });
     });
   });
 });

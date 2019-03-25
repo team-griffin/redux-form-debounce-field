@@ -66,4 +66,45 @@ storiesOf('ReduxDebounceField', module)
         <TestForm/>
       </Provider>
     );
+  })
+  .add('long delay (blur override)', () => {
+    const Input = ({ input }: any) => (<input {...input}/>)
+
+    const PureForm = ({ value }: { value: string }) => (
+      <div>
+        <label>Search</label>
+        <DebounceField
+          name="search"
+          component={Input}
+          wait={5000}
+        />
+        <div>Value: {value}</div>
+      </div>
+    );
+    const enhance = compose<{ value: string }, {}>(
+      connect((state) => ({
+        value: r.pipe(
+          getFormValues('test'),
+          r.prop('search'),
+        )(state),
+      })),
+      reduxForm({
+        form: 'test',
+        propNamespace: 'form',
+      }),
+    );
+    const TestForm = enhance(PureForm);
+
+    const store = createStore(
+      combineReducers({
+        form: reduxFormReducer,
+      }),
+      composeWithDevTools(),
+    );
+
+    return (
+      <Provider store={store} key="key">
+        <TestForm/>
+      </Provider>
+    );
   });

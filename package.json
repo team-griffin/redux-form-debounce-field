@@ -1,6 +1,6 @@
 {
   "name": "redux-form-debounce-field",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "dist/cjs/redux-form-debounce-field.js",
   "module": "dist/es/redux-form-debounce-field.js",
   "types": "dist/es/index.d.ts",

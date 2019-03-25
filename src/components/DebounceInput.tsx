@@ -15,6 +15,7 @@ import {
 import debounce from 'lodash.debounce';
 
 type OnChange = (evt: React.ChangeEvent<HTMLInputElement>) => any;
+type OnBlur = (evt: React.FocusEvent<HTMLInputElement>) => any;
 
 interface Indexed {
   [key: string]: any;
@@ -38,6 +39,7 @@ export interface StateProps extends DefaultProps {
 
 export interface HandlerProps extends StateProps {
   onChange: OnChange,
+  onBlur: OnBlur,
 }
 
 export interface InnerProps extends WrappedFieldProps, Indexed {
@@ -50,6 +52,7 @@ const PureDebounceInput = ({
   debounceFieldValue,
   setDebounceFieldValue,
   onChange,
+  onBlur,
   ...props
 }: InnerProps) => (
   <Component {...props}/>
@@ -103,17 +106,25 @@ const enhance = compose<InnerProps, OuterProps>(
         call(props.input.onChange, evt);
         props.setDebounceFieldValue(evt.target.value);
       },
+      onBlur: (props) => (evt: React.FocusEvent<HTMLInputElement>) => {
+        call.cancel();
+        setDebouncing(false);
+        props.input.onChange(evt);
+        props.input.onBlur(evt);
+      },
     };
   }),
   withProps(({
     input,
     debounceFieldValue,
     onChange,
+    onBlur,
   }: HandlerProps) => ({
     input: {
       ...input,
       value: debounceFieldValue,
       onChange: onChange,
+      onBlur: onBlur,
     },
   })),
 );
