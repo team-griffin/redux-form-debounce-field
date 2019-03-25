@@ -16,6 +16,7 @@ import debounce from 'lodash.debounce';
 
 type OnChange = (evt: React.ChangeEvent<HTMLInputElement>) => any;
 type OnBlur = (evt: React.FocusEvent<HTMLInputElement>) => any;
+type OnKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>) => any;
 
 interface Indexed {
   [key: string]: any;
@@ -40,6 +41,7 @@ export interface StateProps extends DefaultProps {
 export interface HandlerProps extends StateProps {
   onChange: OnChange,
   onBlur: OnBlur,
+  onKeyDown: OnKeyDown,
 }
 
 export interface InnerProps extends WrappedFieldProps, Indexed {
@@ -51,8 +53,11 @@ const PureDebounceInput = ({
   wait,
   debounceFieldValue,
   setDebounceFieldValue,
+  debouncing,
+  setDebouncing,
   onChange,
   onBlur,
+  onKeyDown,
   ...props
 }: InnerProps) => (
   <Component {...props}/>
@@ -112,6 +117,13 @@ const enhance = compose<InnerProps, OuterProps>(
         props.input.onChange(evt);
         props.input.onBlur(evt);
       },
+      onKeyDown: (props) => (evt: React.KeyboardEvent<HTMLInputElement>) => {
+        if (evt.keyCode === 13) {
+          call.cancel();
+          setDebouncing(false);
+          props.input.onChange(evt);
+        }
+      },
     };
   }),
   withProps(({
@@ -119,12 +131,14 @@ const enhance = compose<InnerProps, OuterProps>(
     debounceFieldValue,
     onChange,
     onBlur,
+    onKeyDown,
   }: HandlerProps) => ({
     input: {
       ...input,
       value: debounceFieldValue,
-      onChange: onChange,
-      onBlur: onBlur,
+      onChange,
+      onBlur,
+      onKeyDown,
     },
   })),
 );

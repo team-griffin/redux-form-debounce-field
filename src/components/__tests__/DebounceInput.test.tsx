@@ -274,6 +274,7 @@ describe('<ReduxDebounceInput />', function() {
             withState('input', 'setInput', {
               ...fakeInput,
               onChange: () => {},
+              onBlur: () => {},
               value: 'original',
             }),
             enhance,

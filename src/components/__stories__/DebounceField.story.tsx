@@ -71,15 +71,17 @@ storiesOf('ReduxDebounceField', module)
     const Input = ({ input }: any) => (<input {...input}/>)
 
     const PureForm = ({ value }: { value: string }) => (
-      <div>
-        <label>Search</label>
-        <DebounceField
-          name="search"
-          component={Input}
-          wait={5000}
-        />
-        <div>Value: {value}</div>
-      </div>
+      <form>
+        <div>
+          <label>Search</label>
+          <DebounceField
+            name="search"
+            component={Input}
+            wait={5000}
+          />
+          <div>Value: {value}</div>
+        </div>
+      </form>
     );
     const enhance = compose<{ value: string }, {}>(
       connect((state) => ({
