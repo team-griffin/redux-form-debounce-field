@@ -10,6 +10,7 @@
     "jsx": "react",
     "declaration": true,
     "esModuleInterop": true,
-    "types": [ "node", "mocha" ]
-  }
+    "types": [ "node", "mocha" ],
+  },
+  "include": [ "@types" ]
 }

@@ -1,28 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { shallow, mount, configure } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import * as sinon from 'sinon';
 import { expect } from 'chai';
-import {
-  __test__,
-  InnerProps,
-} from '../DebounceInput';
+import DebounceInput from '../DebounceInput';
 import {
   WrappedFieldInputProps,
   WrappedFieldMetaProps,
 } from 'redux-form';
-import {
-  createSink,
-  compose,
-  withState,
-} from 'recompose';
 
 configure({ adapter: new Adapter() });
-
-const {
-  PureDebounceInput,
-  enhance,
-} = __test__;
 
 const pause = (n: number = 0) => new Promise((res) => {
   setTimeout(res, n);
@@ -31,14 +18,14 @@ const pause = (n: number = 0) => new Promise((res) => {
 const fakeInput = {} as WrappedFieldInputProps;
 const fakeMeta = {} as WrappedFieldMetaProps;
 
-describe('<ReduxDebounceInput />', function() {
+describe('<DebounceInput />', function() {
 
-  describe('::PureDebounceInput', function () {
+  describe('::DebounceInput', function () {
 
     it('renders the component', function () {
       const C = () => <div id="qwerty"/>
       const wrapper = mount(
-        <PureDebounceInput
+        <DebounceInput
           ownerComponent={C}
           input={fakeInput}
           meta={fakeMeta}
@@ -48,41 +35,18 @@ describe('<ReduxDebounceInput />', function() {
       expect(wrapper.html()).to.equal('<div id="qwerty"></div>');
     });
 
-    it('passes props through', function() {
-      const spy = sinon.spy();
-      const Sink = createSink(spy);
-      mount(
-        <PureDebounceInput
-          ownerComponent={Sink}
-          input={fakeInput}
-          meta={fakeMeta}
-          foo="bah"
-        />
-      );
-
-      expect(spy.called).to.be.true;
-      expect(spy.lastCall.args[0]).to.deep.equal({
-        input: fakeInput,
-        meta: fakeMeta,
-        foo: 'bah',
-      });
-    });
-  });
-
-  describe('::enhance', function () {
     it('uses the redux form initial value', function() {
-      const Sink = createSink(() => {});
+      const Sink = (): any => null;
       const props = {
-        ownerComponent: (): any => null,
+        ownerComponent: Sink,
         input: {
           ...fakeInput,
           value: 'original'
         },
         meta: fakeMeta,
       };
-      const Stub = enhance(Sink);
 
-      const wrapper = mount(<Stub {...props}/>);
+      const wrapper = mount(<DebounceInput {...props}/>);
 
       expect(wrapper.find(Sink).prop('input').value).to.equal('original');
     });
@@ -90,11 +54,12 @@ describe('<ReduxDebounceInput />', function() {
       it('uses the user\'s value', function() {
         let value;
 
-        const Sink = createSink((props: InnerProps) => {
+        const Sink = (props: any): any => {
           value = props.input.value;
-        });
+          return null;
+        };
         const props = {
-          ownerComponent: (): any => null,
+          ownerComponent: Sink,
           input: {
             ...fakeInput,
             onChange: () => {},
@@ -102,9 +67,8 @@ describe('<ReduxDebounceInput />', function() {
           },
           meta: fakeMeta,
         };
-        const Stub = enhance(Sink);
   
-        const wrapper = mount(<Stub {...props}/>);
+        const wrapper = mount(<DebounceInput {...props}/>);
 
         expect(value).to.equal('original');
 
@@ -119,9 +83,9 @@ describe('<ReduxDebounceInput />', function() {
       });
       it('sends the value to redux form after a delay', async function() {
         const spy = sinon.spy();
-        const Sink = createSink(() => {});
+        const Sink = (): null => null;
         const props = {
-          ownerComponent: (): any => null,
+          ownerComponent: Sink,
           input: {
             ...fakeInput,
             onChange: spy,
@@ -129,9 +93,8 @@ describe('<ReduxDebounceInput />', function() {
           },
           meta: fakeMeta,
         };
-        const Stub = enhance(Sink);
   
-        const wrapper = mount(<Stub wait={50} {...props}/>);
+        const wrapper = mount(<DebounceInput wait={50} {...props}/>);
 
         const evt = {
           persist: () => {},
@@ -139,6 +102,7 @@ describe('<ReduxDebounceInput />', function() {
             value: 'changed',
           },
         };
+        // @ts-ignore
         wrapper.find(Sink).prop('input').onChange(evt);
   
         expect(spy.called).to.be.false;
@@ -152,21 +116,32 @@ describe('<ReduxDebounceInput />', function() {
     context('when the value changes in redux form', function() {
       it('it uses the redux form value', async function() {
         let value;
-        const Sink = createSink((props: InnerProps) => {
+        const Sink = (props: any): any => {
           value = props.input.value;
-        });
+          return null;
+        };
         const props = {
-          ownerComponent: (): any => null,
+          ownerComponent: Sink,
           meta: fakeMeta,
         };
-        const Stub = compose<any, any>(
-          withState('input', 'setInput', {
+        const Stub = (props: any) => {
+          const [ input, setInput ] = useState({
             ...fakeInput,
-            onChange: () => {},
+            onChange: (evt: any) => setInput({
+              ...input,
+              value: evt.target.value,
+            }),
             value: 'original',
-          }),
-          enhance,
-        )(Sink);
+          });
+          return (
+            <DebounceInput
+              {...props}
+              input={input}
+              setInput={setInput}
+            />
+          );
+        };
+
         const evt = {
           persist: () => {},
           target: {
@@ -190,26 +165,36 @@ describe('<ReduxDebounceInput />', function() {
           value: 'overridden',
         });
 
+        await pause(100);
+
         expect(value).to.equal('overridden');
       });
       context('when there is an ongoing debounce cycle', function() {
         it('prefers the user\'s value', async function() {
           let value;
-          const Sink = createSink((props: InnerProps) => {
+          const Sink = (props: any): any => {
             value = props.input.value;
-          });
+            return null;
+          };
           const props = {
-            ownerComponent: (): any => null,
+            ownerComponent: Sink,
             meta: fakeMeta,
           };
-          const Stub = compose<any, any>(
-            withState('input', 'setInput', {
+          const Stub = (props: any) => {
+            const [ input, setInput ] = useState({
               ...fakeInput,
-              onChange: () => {},
+              onChange: (evt: any) => setInput(evt.target.value),
               value: 'original',
-            }),
-            enhance,
-          )(Sink);
+            });
+            return (
+              <DebounceInput
+                {...props}
+                input={input}
+                setInput={setInput}
+              />
+            );
+          };
+
           const evt = {
             persist: () => {},
             target: {
@@ -255,30 +240,40 @@ describe('<ReduxDebounceInput />', function() {
             onChange: () => {},
             value: 'overridden2',
           });
+
+          await pause(100);
   
           expect(value).to.equal('overridden2');
         });
       });
 
       context('when user leaves the field', function() {
-        it('updates the redux form value immediately', function() {
+        it('updates the redux form value immediately', async function() {
           let value;
-          const Sink = createSink((props: InnerProps) => {
+          const Sink = (props: any): any => {
             value = props.input.value;
-          });
+            return null;
+          };
           const props = {
-            ownerComponent: (): any => null,
+            ownerComponent: Sink,
             meta: fakeMeta,
           };
-          const Stub = compose<any, any>(
-            withState('input', 'setInput', {
+          const Stub = (props: any) => {
+            const [ input, setInput ] = useState({
               ...fakeInput,
-              onChange: () => {},
+              onChange: (evt: any) => setInput(evt.target.value),
               onBlur: () => {},
               value: 'original',
-            }),
-            enhance,
-          )(Sink);
+            });
+            return (
+              <DebounceInput
+                {...props}
+                input={input}
+                setInput={setInput}
+              />
+            );
+          };
+
           const evt = {
             persist: () => {},
             target: {
@@ -292,6 +287,8 @@ describe('<ReduxDebounceInput />', function() {
   
           wrapper.find(Sink).prop('input').onChange(evt);
           wrapper.find(Sink).prop('input').onBlur(evt);
+
+          await pause(100);
   
           expect(value).to.equal('changed');
         });

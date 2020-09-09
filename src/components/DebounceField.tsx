@@ -1,10 +1,5 @@
 import React from 'react';
 import {
-  compose,
-  setDisplayName,
-  pure,
-} from 'recompose';
-import {
   Field,
   BaseFieldProps,
 } from 'redux-form';
@@ -16,7 +11,7 @@ interface Indexed {
 
 export type Props<P = {}> = BaseFieldProps<P> & Indexed & { wait?: number };
 
-const PureDebounceField = ({
+const DebounceField = ({
   component,
   ...props
 }: Props) => (
@@ -26,16 +21,6 @@ const PureDebounceField = ({
     ownerComponent={component}
   />
 );
+DebounceField.displayName = 'DebounceField';
 
-const enhance = compose<Props, Props>(
-  setDisplayName('DebounceField'),
-  pure,
-);
-
-export default enhance(PureDebounceField);
-
-// eslint-disable-next-line no-underscore-dangle
-export const __test__ = {
-  PureDebounceField,
-  enhance,
-};
+export default DebounceField;

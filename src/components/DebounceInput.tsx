@@ -1,152 +1,93 @@
-import React from 'react';
-import {
-  setDisplayName,
-  compose,
-  defaultProps,
-  pure,
-  withProps,
-  lifecycle,
-  withStateHandlers,
-  withHandlers,
-} from 'recompose';
-import {
-  WrappedFieldProps,
-} from 'redux-form';
+import React, {
+  ComponentType,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  ChangeEvent,
+  FocusEvent,
+  KeyboardEvent,
+  useRef,
+} from 'react';
+import { WrappedFieldProps } from 'redux-form';
 import debounce from 'lodash.debounce';
 
 type OnChange = (evt: React.ChangeEvent<HTMLInputElement>) => any;
-type OnBlur = (evt: React.FocusEvent<HTMLInputElement>) => any;
-type OnKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>) => any;
 
 interface Indexed {
   [key: string]: any;
 }
 
-export interface OuterProps extends WrappedFieldProps, Indexed {
-  wait?: number;
-  ownerComponent: React.ComponentType<WrappedFieldProps & Indexed>,
+interface OuterProps extends WrappedFieldProps, Indexed {
+  ownerComponent: ComponentType<WrappedFieldProps & Indexed>,
+  wait?: number,
 }
 
-export interface DefaultProps extends OuterProps {
-  wait: number;
-}
-
-export interface StateProps extends DefaultProps {
-  debounceFieldValue: string;
-  setDebounceFieldValue: (v: string) => any,
-  debouncing: boolean,
-  setDebouncing: (v: boolean) => any,
-}
-
-export interface HandlerProps extends StateProps {
-  onChange: OnChange,
-  onBlur: OnBlur,
-  onKeyDown: OnKeyDown,
-}
-
-export interface InnerProps extends WrappedFieldProps, Indexed {
-  ownerComponent: React.ComponentType<WrappedFieldProps & Indexed>,
-}
-
-const PureDebounceInput = ({
+const DebounceInput = ({
   ownerComponent: Component,
-  wait,
-  debounceFieldValue,
-  setDebounceFieldValue,
-  debouncing,
-  setDebouncing,
-  onChange,
-  onBlur,
-  onKeyDown,
+  wait = 250,
   ...props
-}: InnerProps) => (
-  <Component {...props}/>
-);
+}: OuterProps) => {
+  const [ debounceFieldValue, setDebounceFieldValue ] = useState('');
+  const [ debouncing, setDebouncing ] = useState(false);
+  const lastInputValue = useRef(props.input.value);
 
-const enhance = compose<InnerProps, OuterProps>(
-  setDisplayName('DebounceInput'),
-  pure,
-  defaultProps({ wait: 250 }),
-  withStateHandlers(
-    {
-      debounceFieldValue: '',
-      debouncing: false,
-    },
-    {
-      // eslint-disable-next-line max-len
-      setDebounceFieldValue: () => (debounceFieldValue) => ({ debounceFieldValue }),
-      setDebouncing: () => (debouncing) => ({ debouncing }),
-    },
-  ),
-  lifecycle<StateProps, {}>({
-    componentDidMount() {
-      this.props.setDebounceFieldValue(this.props.input.value);
-    },
-    componentWillReceiveProps(nextProps) {
-      if (nextProps.debouncing) {
-        return;
-      }
-      if (nextProps.input.value === this.props.input.value) {
-        return;
-      }
-      this.props.setDebounceFieldValue(nextProps.input.value);
-    },
-  }),
-  withHandlers<StateProps, {}>(({ wait, setDebouncing }) => {
-    const call = debounce(
-      (
-        onChange: OnChange,
-        evt: React.ChangeEvent<HTMLInputElement>,
-      ) => {
-        setDebouncing(false);
-        onChange(evt);
-      },
-      wait,
-    );
+  useEffect(() => {
+    if (debouncing) {
+      return;
+    }
+    if (props.input.value === lastInputValue.current) {
+      return;
+    }
+    lastInputValue.current = props.input.value;
+    setDebounceFieldValue(props.input.value);
+  }, [ debouncing, props.input.value ]);
 
-    return {
-      onChange: (props) => (evt: React.ChangeEvent<HTMLInputElement>) => {
-        evt.persist();
-        setDebouncing(true);
-        call(props.input.onChange, evt);
-        props.setDebounceFieldValue(evt.target.value);
-      },
-      onBlur: (props) => (evt: React.FocusEvent<HTMLInputElement>) => {
-        call.cancel();
-        setDebouncing(false);
-        props.input.onChange(evt);
-        props.input.onBlur(evt);
-      },
-      onKeyDown: (props) => (evt: React.KeyboardEvent<HTMLInputElement>) => {
-        if (evt.keyCode === 13) {
-          call.cancel();
-          setDebouncing(false);
-          props.input.onChange(evt);
-        }
-      },
-    };
-  }),
-  withProps(({
-    input,
-    debounceFieldValue,
+  const call = useMemo(() => debounce((
+    onChange: OnChange,
+    evt: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setDebouncing(false);
+    onChange(evt);
+  }, wait), [ setDebouncing, wait ]);
+
+  const onChange = useCallback((evt: ChangeEvent<HTMLInputElement>) => {
+    evt.persist();
+    setDebouncing(true);
+    call(props.input.onChange, evt);
+    setDebounceFieldValue(evt.target.value);
+  }, [ setDebouncing, call, setDebounceFieldValue ]);
+
+  const onBlur = useCallback((evt: FocusEvent<HTMLInputElement>) => {
+    call.cancel();
+    setDebouncing(false);
+    props.input.onChange(evt);
+    props.input.onBlur(evt);
+  }, [ call, setDebouncing, props.input.onChange, props.input.onBlur ]);
+
+  const onKeyDown = useCallback((evt: KeyboardEvent<HTMLInputElement>) => {
+    if (evt.keyCode === 13) {
+      call.cancel();
+      setDebouncing(false);
+      props.input.onChange(evt);
+    }
+  }, [ call, setDebouncing, props.input.onChange ]);
+
+  const input = {
+    ...props.input,
+    value: debounceFieldValue,
     onChange,
     onBlur,
     onKeyDown,
-  }: HandlerProps) => ({
-    input: {
-      ...input,
-      value: debounceFieldValue,
-      onChange,
-      onBlur,
-      onKeyDown,
-    },
-  })),
-);
+  };
 
-export default enhance(PureDebounceInput);
-
-// eslint-disable-next-line no-underscore-dangle
-export const __test__ = {
-  PureDebounceInput,
-  enhance,
+  return (
+    <Component
+      {...props}
+      input={input}
+    />
+  );
 };
+DebounceInput.displayName = 'DebounceInput';
+
+export default DebounceInput;

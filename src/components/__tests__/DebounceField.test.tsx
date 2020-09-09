@@ -1,25 +1,18 @@
 import React from 'react';
 import { shallow, mount, configure } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
-import * as sinon from 'sinon';
 import { expect } from 'chai';
-import {
-  __test__,
-} from '../DebounceField';
+import DebounceField from '../DebounceField';
 import DebounceInput from '../DebounceInput';
 
 configure({ adapter: new Adapter() });
 
-const {
-  PureDebounceField,
-} = __test__;
+describe('<DebounceField />', function() {
 
-describe('<ReduxDebounceField />', function() {
-
-  describe('::PureReduxDebounceField', function () {
+  describe('::DebounceField', function () {
     it('renders a Field', function () {
       const wrapper = shallow(
-        <PureDebounceField
+        <DebounceField
           name="testField"
         />
       );
@@ -30,7 +23,7 @@ describe('<ReduxDebounceField />', function() {
     it('overrides component with DebounceInput', function () {
       const C = () => (<input/>);
       const wrapper = shallow(
-        <PureDebounceField
+        <DebounceField
           name="testField"
           component={C}
         />
